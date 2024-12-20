@@ -4,4 +4,4 @@ A work-in-progress remake of Terraria 1.0, written in [Zig](https://github.com/z
 
 ## Web Demo
 
-There is a web demo playable here.
+There is a web demo playable [here.](https://jamzojamz.github.io/terraria-classic/)
