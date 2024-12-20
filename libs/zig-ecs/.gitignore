@@ -1,0 +1,8 @@
+zig-cache
+.zig-cache
+zig-arm-cache
+
+/docs/
+
+.DS_Store
+zig-out
