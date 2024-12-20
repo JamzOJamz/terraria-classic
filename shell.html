@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta content="text/html; charset=utf-8" http-equiv="Content-Type" />
-    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="icon" type="image/png" href="./favicon.png" />
     <title>Terraria Classic</title>
     <style>
       html {
@@ -195,6 +195,13 @@
               e && console.error("[post-exception status] " + e);
             });
         });
+
+      // Prevent spacebar from scrolling the page
+      window.addEventListener("keydown", function (e) {
+        if (e.keyCode == 32 && e.target == document.body) {
+          e.preventDefault();
+        }
+      });
     </script>
     {{{ SCRIPT }}}
   </body>
