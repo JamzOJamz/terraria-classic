@@ -74,6 +74,17 @@
       >!
     </p>
 
+    <p>
+      <i>
+        All rights to
+        <a href="https://terraria.org/" target="_blank">Terraria</a>
+        belong to
+        <a href="https://re-logic.com/" target="_blank">Re-Logic</a>. This is a
+        fan-made project made with ❤️ by
+        <a href="https://github.com/JamzOJamz" target="_blank">JamzOJamz</a>!</i
+      >
+    </p>
+
     <div
       id="controls"
       style="
@@ -92,10 +103,23 @@
           value="Fullscreen"
         />
       </span>
-      <div id="status" style="margin-left: auto">Downloading...</div>
     </div>
 
-    <div class="emscripten_border" style="margin-top: 16px">
+    <div class="emscripten_border" style="margin-top: 16px; position: relative">
+      <div
+        id="status"
+        style="
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          font-size: 18px;
+          color: white;
+          z-index: 2;
+        "
+      >
+        Downloading...
+      </div>
       <canvas
         class="emscripten"
         id="canvas"
@@ -103,18 +127,11 @@
         height="600"
         oncontextmenu="event.preventDefault()"
         tabindex="-1"
+        style="z-index: 1; position: relative"
       ></canvas>
     </div>
+
     <textarea id="output" rows="8"></textarea>
-    <p>
-      <i>
-        All rights to
-        <a href="https://terraria.org/" target="_blank">Terraria</a>
-        belong to
-        <a href="https://re-logic.com/" target="_blank">Re-Logic</a>. This is a
-        fan-made project.</i
-      >
-    </p>
     <div class="spinner" id="spinner"></div>
     <div class="emscripten">
       <progress value="0" max="100" id="progress" hidden="1"></progress>

@@ -170,7 +170,7 @@ pub fn main() !void {
 
     rl.setConfigFlags(.{ .vsync_hint = use_vsync }); // Enable V-Sync on GPU
     rl.setRandomSeed(@intCast(std.time.milliTimestamp())); // Initialize random seed based on current time
-    rl.initWindow(window_width, window_height, getRandomWindowTitle());
+    rl.initWindow(window_width, window_height, getRandomWindowTitle().ptr);
     defer rl.closeWindow();
     rl.initAudioDevice(); // Initialize audio device
     defer rl.closeAudioDevice();
@@ -361,7 +361,7 @@ fn drawRenderables(scene: *Scene) void {
                         .x = @as(f32, @floatFromInt(s.texture.width)) * tr.origin.x * tr.scale,
                         .y = @as(f32, @floatFromInt(s.texture.height)) * tr.origin.y * tr.scale,
                     },
-                    tr.rotation * (180.0 / std.math.pi),
+                    tr.rotation * (180.0 / std.math.pi), // Convert radians to degrees
                     s.tint,
                 );
             }
@@ -395,7 +395,6 @@ fn getMousePosition() rl.Vector2 {
     if (builtin.target.os.tag == .windows) {
         var point = win32.foundation.POINT{ .x = 0, .y = 0 };
         _ = win32.ui.windows_and_messaging.GetCursorPos(&point);
-        std.debug.print("Mouse position: ({d}, {d})\n", .{ point.x, point.y });
         const window_pos = rl.getWindowPosition();
         point.x -= @intFromFloat(window_pos.x);
         point.y -= @intFromFloat(window_pos.y);
@@ -413,14 +412,15 @@ fn animateCursor() void {
     _ = rl.Color{ .r = 255, .g = 255, .b = 255, .a = 255 };
 }
 
-fn getRandomWindowTitle() [*:0]const u8 {
-    const rand = rl.getRandomValue(0, 4);
-    switch (rand) {
-        0 => return "Terraria Classic: Dig Peon, Dig!",
-        1 => return "Terraria Classic: Hey Guys!",
-        2 => return "Terraria Classic: Epic Dirt",
-        3 => return "Terraria Classic: Nobody Asked For This",
-        4 => return "Terraria Classic 2: Electric Boogaloo",
-        else => unreachable,
-    }
+/// Returns a random window title for the game to use from a list of options.
+fn getRandomWindowTitle() [:0]const u8 {
+    const titles = [_][:0]const u8{
+        "Terraria Classic: Dig Peon, Dig!",
+        "Terraria Classic: Hey Guys!",
+        "Terraria Classic: Epic Dirt",
+        "Terraria Classic: Nobody Asked For This",
+        "Terraria Classic 2: Electric Boogaloo",
+    };
+    const rand = rl.getRandomValue(0, titles.len - 1);
+    return titles[@intCast(rand)];
 }
