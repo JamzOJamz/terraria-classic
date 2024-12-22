@@ -165,7 +165,7 @@ pub fn main() !void {
     //--------------------------------------------------------------------------------------
     const window_width = 800;
     const window_height = 600;
-    const fps_target = 144;
+    const fps_target = 60;
     const use_vsync = true;
 
     rl.setConfigFlags(.{ .vsync_hint = use_vsync }); // Enable V-Sync on GPU
