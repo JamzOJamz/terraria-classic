@@ -13,12 +13,23 @@
       }
 
       body {
-        margin: 40px auto;
+        padding: 0;
+        margin: 0;
+        background-color: #eee;
+      }
+
+      #container {
+        margin: 0 auto;
+        padding-left: 40px;
+        padding-right: 40px;
         max-width: 800px;
+        min-height: 100vh;
         line-height: 1.6;
         font-size: 18px;
+        background-color: #fff;
         color: #444;
-        padding: 0 10px;
+        box-sizing: content-box;
+        overflow: auto;
       }
 
       a {
@@ -57,84 +68,91 @@
     </style>
   </head>
   <body>
-    <h1 style="display: inline">Terraria Classic</h1>
-    <span style="font-size: 1.25rem; margin-left: 5px; font-weight: bold"
-      >v0.0.1a</span
-    >
-    <p>
-      A work-in-progress remake of <strong>Terraria 1.0</strong>, written in the
-      <a href="https://ziglang.org/" target="_blank"
-        >Zig programming language</a
-      >
-      and using
-      <a href="https://www.raylib.com/" target="_blank">raylib</a> for
-      rendering. Check out the source code on
-      <a href="https://github.com/JamzOJamz/terraria-classic" target="_blank"
-        >GitHub</a
-      >!
-    </p>
-
-    <p>
-      <i>
-        All rights to
-        <a href="https://terraria.org/" target="_blank">Terraria</a>
-        belong to
-        <a href="https://re-logic.com/" target="_blank">Re-Logic</a>. This is a
-        fan-made project made with ❤️ by
-        <a href="https://github.com/JamzOJamz" target="_blank">JamzOJamz</a>!</i
-      >
-    </p>
-
-    <div
-      id="controls"
-      style="
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 10px;
-        display: none;
-      "
-    >
-      <span> <input type="checkbox" id="resize" />Resize canvas </span>
-      <span>
-        <input
-          type="button"
-          onclick='Module.requestFullscreen(false, document.getElementById("resize").checked)'
-          value="Fullscreen"
-        />
-      </span>
-    </div>
-
-    <div class="emscripten_border" style="margin-top: 16px; position: relative">
+    <div id="container">
       <div
-        id="status"
+        class="emscripten_border"
+        style="position: relative; margin-top: 40px"
+      >
+        <div
+          id="status"
+          style="
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            color: white;
+            z-index: 2;
+          "
+        >
+          Downloading...
+        </div>
+        <canvas
+          class="emscripten"
+          id="canvas"
+          width="800"
+          height="600"
+          oncontextmenu="event.preventDefault()"
+          tabindex="-1"
+          style="z-index: 1; position: relative"
+        ></canvas>
+      </div>
+
+      <textarea id="output" style="display: none" rows="8"></textarea>
+      <div style="margin-top: 20px"></div>
+      <h1 style="display: inline">Terraria Classic</h1>
+      <span style="font-size: 1.25rem; margin-left: 7px; font-weight: bold"
+        >v0.0.1a</span
+      >
+      <p>
+        A work-in-progress remake of <strong>Terraria 1.0</strong>, written in
+        the
+        <a href="https://ziglang.org/" target="_blank"
+          >Zig programming language</a
+        >
+        and using
+        <a href="https://www.raylib.com/" target="_blank">raylib</a> for
+        rendering. Check out the source code on
+        <a href="https://github.com/JamzOJamz/terraria-classic" target="_blank"
+          >GitHub</a
+        >!
+      </p>
+
+      <p style="margin-bottom: 40px">
+        <i>
+          All rights to
+          <a href="https://terraria.org/" target="_blank">Terraria</a>
+          belong to
+          <a href="https://re-logic.com/" target="_blank">Re-Logic</a>. This is
+          a fan-made project made with ❤️ by
+          <a href="https://github.com/JamzOJamz" target="_blank">JamzOJamz</a
+          >!</i
+        >
+      </p>
+
+      <div
+        id="controls"
         style="
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          font-size: 18px;
-          color: white;
-          z-index: 2;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 10px;
+          display: none;
         "
       >
-        Downloading...
+        <span> <input type="checkbox" id="resize" />Resize canvas </span>
+        <span>
+          <input
+            type="button"
+            onclick='Module.requestFullscreen(false, document.getElementById("resize").checked)'
+            value="Fullscreen"
+          />
+        </span>
       </div>
-      <canvas
-        class="emscripten"
-        id="canvas"
-        width="800"
-        height="600"
-        oncontextmenu="event.preventDefault()"
-        tabindex="-1"
-        style="z-index: 1; position: relative"
-      ></canvas>
-    </div>
-
-    <textarea id="output" rows="8"></textarea>
-    <div class="spinner" id="spinner"></div>
-    <div class="emscripten">
-      <progress value="0" max="100" id="progress" hidden="1"></progress>
+      <div class="spinner" id="spinner"></div>
+      <div class="emscripten">
+        <progress value="0" max="100" id="progress" hidden="1"></progress>
+      </div>
     </div>
     <script>
       var statusElement = document.getElementById("status"),
