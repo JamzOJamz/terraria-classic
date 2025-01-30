@@ -1,2 +1,0 @@
-# Don't include raylib headers in language analysis
-*.h linguist-vendored
