@@ -1,0 +1,20 @@
+.{
+    .name = "terraria-classic",
+    .version = "0.0.1",
+    .dependencies = .{
+        .@"raylib-zig" = .{
+            .url = "git+https://github.com/Not-Nik/raylib-zig?ref=devel#58724227e7fd90bebfcbd44c6013231447a67ff2",
+            .hash = "1220eedbc450fcfced1599d69f1e2c38b60af51616dbf724f6b9a8ed2c2a7c62cf9c",
+        },
+        .zigwin32 = .{
+            .url = "git+https://github.com/marlersoft/zigwin32?ref=main#e8739b32a33ce48a3286aba31918b26a9dfc6ef0",
+            .hash = "1220219ca4acfa5804ca39945f92554e93507b077c03605b7a4c1c0401f0c7121339",
+        },
+    },
+    .paths = .{
+        "build.zig",
+        "build.zig.zon",
+        "src",
+        "README.md",
+    },
+}
