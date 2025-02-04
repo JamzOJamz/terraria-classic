@@ -3,6 +3,7 @@ const std = @import("std");
 const rl = @import("raylib");
 
 const texture_assets = @import("texture_assets.zig");
+const draw_utils = @import("utils/draw_utils.zig");
 
 const Self = @This();
 
@@ -21,8 +22,6 @@ active: bool = false,
 
 pub fn draw(self: *Self) void {
     const texture = texture_assets.cloud[self.type];
-    const scaled_width = @as(f32, @floatFromInt(texture.width)) * self.scale;
-    const scaled_height = @as(f32, @floatFromInt(texture.height)) * self.scale;
     const alpha = 255 - @as(u8, @intFromFloat(std.math.clamp(40.0 * (2.0 - self.scale), 0.0, 255.0)));
     const color = rl.Color{
         .r = alpha,
@@ -30,25 +29,19 @@ pub fn draw(self: *Self) void {
         .b = alpha,
         .a = alpha,
     };
-    rl.drawTexturePro(
+
+    draw_utils.drawTexturePro(
         texture,
-        rl.Rectangle{
+        self.position,
+        .{
             .x = 0,
             .y = 0,
             .width = @floatFromInt(texture.width),
             .height = @floatFromInt(texture.height),
         },
-        rl.Rectangle{
-            .x = self.position.x,
-            .y = self.position.y,
-            .width = scaled_width,
-            .height = scaled_height,
-        },
-        rl.Vector2{
-            .x = scaled_width / 2.0,
-            .y = scaled_height / 2.0,
-        },
-        self.rotation * (180.0 / std.math.pi),
         color,
+        self.rotation,
+        .{ .x = 0.5, .y = 0.5 },
+        self.scale,
     );
 }

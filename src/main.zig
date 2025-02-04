@@ -11,7 +11,6 @@ const menu = @import("menu.zig");
 const mouse_text_system = @import("mouse_text_system.zig");
 const texture_assets = @import("texture_assets.zig");
 const time = @import("time.zig");
-const utils = @import("utils.zig");
 
 // NOTE: This tells NVIDIA Optimus and AMD PowerXpress to prefer to use the dedicated GPU when running the game
 // https://www.reddit.com/r/gamedev/comments/bk7xbe/psa_for_anyone_developing_a_gameengine_in_c/
@@ -27,7 +26,7 @@ comptime {
 }
 
 var rand: std.Random = undefined;
-var show_splash: bool = true;
+var show_splash: bool = false;
 var splash_counter: f32 = 0;
 var fade_counter: f32 = 0;
 var in_game_menu: bool = true;
@@ -63,7 +62,7 @@ fn initialize() !void {
     //rl.setTraceLogLevel(.none);
     rl.initAudioDevice();
     rl.setAudioStreamBufferSizeDefault(4096);
-    rl.setMasterVolume(1.0);
+    rl.setMasterVolume(0.0);
     rl.initWindow(window_width, window_height, getRandomWindowTitle().ptr);
     rl.setExitKey(.null);
     rl.setTargetFPS(fps_target);

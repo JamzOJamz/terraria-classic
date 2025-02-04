@@ -5,6 +5,7 @@ const rl = @import("raylib");
 const main = @import("main.zig");
 const texture_assets = @import("texture_assets.zig");
 const time = @import("time.zig");
+const draw_utils = @import("utils/draw_utils.zig");
 
 var logo_rotation: f32 = 0.0;
 var logo_rotation_direction: f32 = 1.0;
@@ -60,27 +61,24 @@ fn drawLogo() void {
     }
 
     const logo_texture = texture_assets.logo;
-    const scaled_width = @as(f32, @floatFromInt(logo_texture.width)) * logo_scale;
-    const scaled_height = @as(f32, @floatFromInt(logo_texture.height)) * logo_scale;
-    rl.drawTexturePro(
+    draw_utils.drawTexturePro(
         logo_texture,
+        .{
+            .x = @as(f32, @floatFromInt(rl.getScreenWidth())) / 2.0,
+            .y = 100,
+        },
         rl.Rectangle{
             .x = 0,
             .y = 0,
             .width = @floatFromInt(logo_texture.width),
             .height = @floatFromInt(logo_texture.height),
         },
-        rl.Rectangle{
-            .x = @as(f32, @floatFromInt(rl.getScreenWidth())) / 2.0,
-            .y = 100,
-            .width = scaled_width,
-            .height = scaled_height,
-        },
-        rl.Vector2{
-            .x = scaled_width / 2.0,
-            .y = scaled_height / 2.0,
-        },
-        logo_rotation * (180.0 / std.math.pi),
         .white,
+        logo_rotation,
+        .{
+            .x = 0.5,
+            .y = 0.5,
+        },
+        logo_scale,
     );
 }

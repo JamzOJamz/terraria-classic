@@ -2,7 +2,8 @@ const rl = @import("raylib");
 
 const texture_assets = @import("texture_assets.zig");
 const time = @import("time.zig");
-const utils = @import("utils.zig");
+const draw_utils = @import("utils/draw_utils.zig");
+const general_utils = @import("utils/general_utils.zig");
 
 const mouseColor = rl.Color{
     .r = 255,
@@ -36,43 +37,41 @@ pub fn animate() void {
 }
 
 pub fn draw() void {
-    const mouse_pos = utils.getMousePosition();
+    const mouse_pos = general_utils.getMousePosition();
+    const offset_mouse_pos = mouse_pos.addValue(1.0);
+    const texture = texture_assets.cursor;
     const source = rl.Rectangle{
         .x = 0,
         .y = 0,
-        .width = @floatFromInt(texture_assets.cursor.width),
-        .height = @floatFromInt(texture_assets.cursor.height),
+        .width = @floatFromInt(texture.width),
+        .height = @floatFromInt(texture.height),
     };
     const origin = rl.Vector2.zero();
-    rl.drawTexturePro(
-        texture_assets.cursor,
+
+    // Draw shadow
+    draw_utils.drawTexturePro(
+        texture,
+        offset_mouse_pos,
         source,
-        rl.Rectangle{
-            .x = mouse_pos.x + 1,
-            .y = mouse_pos.y + 1,
-            .width = @as(f32, @floatFromInt(texture_assets.cursor.width)) * scale * 1.1,
-            .height = @as(f32, @floatFromInt(texture_assets.cursor.height)) * scale * 1.1,
-        },
-        origin,
-        0.0,
         rl.Color{
             .r = @intFromFloat(@as(f32, @floatFromInt(color.r)) * 0.2),
             .g = @intFromFloat(@as(f32, @floatFromInt(color.g)) * 0.2),
             .b = @intFromFloat(@as(f32, @floatFromInt(color.b)) * 0.2),
             .a = @intFromFloat(@as(f32, @floatFromInt(color.a)) * 0.5),
         },
-    );
-    rl.drawTexturePro(
-        texture_assets.cursor,
-        source,
-        rl.Rectangle{
-            .x = mouse_pos.x,
-            .y = mouse_pos.y,
-            .width = @as(f32, @floatFromInt(texture_assets.cursor.width)) * scale,
-            .height = @as(f32, @floatFromInt(texture_assets.cursor.height)) * scale,
-        },
-        origin,
         0.0,
+        origin,
+        scale * 1.1,
+    );
+
+    // Draw cursor
+    draw_utils.drawTexturePro(
+        texture,
+        mouse_pos,
+        source,
         color,
+        0.0,
+        origin,
+        scale,
     );
 }
