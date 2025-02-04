@@ -59,7 +59,7 @@ fn resetClouds(self: *BackgroundSystem) void {
         self.wind_speed = @as(f32, @floatFromInt(self.rand.intRangeAtMost(i32, -100, 100))) * 0.01;
     }
 
-    // Create new clouds, clearing the old ones
+    // Create new clouds, clearing the old ones first
     self.clouds.clear();
     for (0..num_clouds) |_| {
         self.addCloudNew();
@@ -67,10 +67,8 @@ fn resetClouds(self: *BackgroundSystem) void {
 
     // Move the clouds onto the screen
     const wind_speed_direction = std.math.sign(self.wind_speed);
-    for (0..self.clouds.len) |i| {
-        var cloud = self.clouds.get(i);
+    for (self.clouds.slice()) |*cloud| {
         cloud.position.x += @as(f32, @floatFromInt(rl.getScreenWidth() * 2)) * wind_speed_direction;
-        self.clouds.set(i, cloud);
     }
 
     //std.debug.print("There are {d} clouds after reset\n", .{self.clouds.len});
