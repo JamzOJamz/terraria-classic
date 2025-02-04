@@ -4,6 +4,7 @@ const builtin = @import("builtin");
 const rl = @import("raylib");
 
 const audio_engine = @import("audio_engine.zig");
+const BackgroundSystem = @import("BackgroundSystem.zig");
 const Cloud = @import("Cloud.zig");
 const cursor = @import("cursor.zig");
 const font_assets = @import("font_assets.zig");
@@ -25,19 +26,15 @@ comptime {
     }
 }
 
+var allocator: std.mem.Allocator = undefined;
+var prng: std.Random.DefaultPrng = undefined;
 var rand: std.Random = undefined;
-var show_splash: bool = false;
+var show_splash: bool = true;
 var splash_counter: f32 = 0;
 var fade_counter: f32 = 0;
 var in_game_menu: bool = true;
 var show_frame_rate: bool = false;
-
-const max_clouds = 100;
-const min_clouds = 10;
-var clouds: [max_clouds]Cloud = undefined;
-var num_clouds: u32 = max_clouds;
-var should_reset_clouds: bool = true;
-var wind_speed: f32 = 0.0;
+var background: BackgroundSystem = undefined;
 
 pub fn main() !void {
     try initialize();
@@ -47,22 +44,34 @@ pub fn main() !void {
 }
 
 fn initialize() !void {
-    var prng = std.Random.DefaultPrng.init(blk: {
+    // Get the allocator for the game depending on the platform
+    const is_web_build = builtin.os.tag == .emscripten;
+    var gpa_state = if (!is_web_build) std.heap.GeneralPurposeAllocator(.{}){} else {};
+    defer {
+        if (!is_web_build) _ = gpa_state.deinit();
+    }
+    allocator = if (!is_web_build) gpa_state.allocator() else std.heap.c_allocator;
+
+    // Create a random number generator for the game using the system's PRNG
+    prng = std.Random.DefaultPrng.init(blk: {
         var seed: u64 = undefined;
         try std.posix.getrandom(std.mem.asBytes(&seed));
         break :blk seed;
     });
     rand = prng.random();
-    @memset(&clouds, .{});
+
+    // Initialize some game systems
+    background = try BackgroundSystem.init(&rand);
 
     const window_width = 800;
     const window_height = 600;
     const fps_target = -1;
+    const master_volume = 1.0;
 
     //rl.setTraceLogLevel(.none);
     rl.initAudioDevice();
     rl.setAudioStreamBufferSizeDefault(4096);
-    rl.setMasterVolume(0.0);
+    rl.setMasterVolume(master_volume);
     rl.initWindow(window_width, window_height, getRandomWindowTitle().ptr);
     rl.setExitKey(.null);
     rl.setTargetFPS(fps_target);
@@ -129,10 +138,7 @@ fn renderUpdate() void {
 
     if (show_splash) return;
 
-    if (should_reset_clouds) {
-        resetClouds();
-        should_reset_clouds = false;
-    }
+    background.update();
 
     if (rl.isKeyPressed(.f10)) {
         show_frame_rate = !show_frame_rate;
@@ -154,24 +160,7 @@ fn draw() !void {
         return;
     }
 
-    // Draw sky gradient
-    const sky_blue_top = rl.Color{ .r = 25, .g = 101, .b = 255, .a = 255 };
-    const sky_blue_bottom = rl.Color{ .r = 132, .g = 170, .b = 248, .a = 255 };
-    rl.drawRectangleGradientV(
-        0,
-        0,
-        rl.getScreenWidth(),
-        rl.getScreenHeight(),
-        sky_blue_top,
-        sky_blue_bottom,
-    );
-
-    // Draw clouds
-    for (0..100) |i| {
-        var cloud = clouds[i];
-        if (!cloud.active) continue;
-        cloud.draw();
-    }
+    background.draw();
 
     if (in_game_menu) try menu.draw();
 
@@ -256,95 +245,6 @@ pub fn drawFPS() !void {
     );
     rl.endBlendMode();
     rl.beginBlendMode(.alpha_premultiply);
-}
-
-fn resetClouds() void {
-    num_clouds = rand.intRangeAtMost(u32, min_clouds, max_clouds);
-    wind_speed = 0.0;
-    while (wind_speed == 0.0) {
-        wind_speed = @as(f32, @floatFromInt(rand.intRangeAtMost(i32, -100, 100))) * 0.01;
-    }
-    for (&clouds) |*cloud| {
-        cloud.active = false;
-    }
-    for (0..num_clouds) |_| {
-        addCloud();
-    }
-    const wind_speed_direction = std.math.sign(wind_speed);
-    for (0..num_clouds) |i| {
-        var cloud = &clouds[i];
-        cloud.position.x += @as(f32, @floatFromInt(rl.getScreenWidth() * 2)) * wind_speed_direction;
-    }
-}
-
-fn addCloud() void {
-    var next_free_index: u32 = std.math.maxInt(u32);
-    for (0..100) |i| {
-        if (!clouds[i].active) {
-            next_free_index = @intCast(i);
-            break;
-        }
-    }
-
-    if (next_free_index == std.math.maxInt(u32)) return;
-
-    var cloud = &clouds[next_free_index];
-    const @"type" = rand.uintLessThan(u32, 4);
-    const texture = texture_assets.cloud[@"type"];
-    cloud.rotation_speed = 0.0;
-    cloud.scale_speed = 0.0;
-    cloud.type = @"type";
-    cloud.scale = @as(f32, @floatFromInt(rand.intRangeLessThan(i32, 8, 13))) * 0.1;
-    cloud.rotation = @as(f32, @floatFromInt(rand.intRangeLessThan(i32, -10, 11))) * 0.01;
-    cloud.width = @intFromFloat(@as(f32, @floatFromInt(texture.width)) * cloud.scale);
-    cloud.height = @intFromFloat(@as(f32, @floatFromInt(texture.height)) * cloud.scale);
-    if (wind_speed > 0.0) {
-        cloud.position.x = @as(f32, @floatFromInt(-cloud.width - texture.width - rand.intRangeLessThan(i32, 0, rl.getScreenWidth() * 2)));
-    } else {
-        cloud.position.x = @as(f32, @floatFromInt(rl.getScreenWidth() + texture.width + rand.intRangeLessThan(i32, 0, rl.getScreenWidth() * 2)));
-    }
-    cloud.position.y = @as(f32, @floatFromInt(
-        rand.intRangeLessThan(
-            i32,
-            @intFromFloat(@as(f32, @floatFromInt(-rl.getScreenHeight())) * 0.25),
-            @intFromFloat(@as(f32, @floatFromInt(rl.getScreenHeight())) * 1.25),
-        ),
-    ));
-    for (0..2) |_| {
-        cloud.position.y = cloud.position.y - @as(f32, @floatFromInt(
-            rand.uintLessThan(
-                u32,
-                @intFromFloat(@as(f32, @floatFromInt(rl.getScreenHeight())) * 0.25),
-            ),
-        ));
-    }
-    cloud.scale *= 2.2 - ((cloud.position.y + @as(f32, @floatFromInt(rl.getScreenHeight())) * 0.25) / (@as(f32, @floatFromInt(rl.getScreenHeight())) * 1.5) + 0.7);
-    cloud.scale = std.math.clamp(cloud.scale, 0.6, 1.4);
-    cloud.active = true;
-
-    // Remove clouds that overlap each other
-    const rect = rl.Rectangle{
-        .x = cloud.position.x,
-        .y = cloud.position.y,
-        .width = @floatFromInt(cloud.width),
-        .height = @floatFromInt(cloud.height),
-    };
-    for (0..100) |i| {
-        if (i == next_free_index) continue;
-        const other = &clouds[i];
-        if (!other.active) continue;
-        const other_rect = rl.Rectangle{
-            .x = other.position.x,
-            .y = other.position.y,
-            .width = @floatFromInt(other.width),
-            .height = @floatFromInt(other.height),
-        };
-        if (rl.checkCollisionRecs(rect, other_rect)) {
-            cloud.active = false;
-        }
-    }
-
-    //std.debug.print("New cloud at index {d}: {}\n", .{ next_free_index, cloud });
 }
 
 /// Returns a random window title for the game to use from a list of options.

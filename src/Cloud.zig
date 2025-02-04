@@ -18,7 +18,6 @@ rotation_speed: f32 = 0.0,
 scale: f32 = 0.0,
 scale_speed: f32 = 0.0,
 type: u32 = 0,
-active: bool = false,
 
 pub fn draw(self: *Self) void {
     const texture = texture_assets.cloud[self.type];

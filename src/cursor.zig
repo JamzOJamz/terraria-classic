@@ -48,17 +48,17 @@ pub fn draw() void {
     };
     const origin = rl.Vector2.zero();
 
-    // Draw shadow
+    // Draw cursor shadow
     draw_utils.drawTexturePro(
         texture,
         offset_mouse_pos,
         source,
-        rl.Color{
-            .r = @intFromFloat(@as(f32, @floatFromInt(color.r)) * 0.2),
-            .g = @intFromFloat(@as(f32, @floatFromInt(color.g)) * 0.2),
-            .b = @intFromFloat(@as(f32, @floatFromInt(color.b)) * 0.2),
-            .a = @intFromFloat(@as(f32, @floatFromInt(color.a)) * 0.5),
-        },
+        .init(
+            @intFromFloat(@as(f32, @floatFromInt(color.r)) * 0.2),
+            @intFromFloat(@as(f32, @floatFromInt(color.g)) * 0.2),
+            @intFromFloat(@as(f32, @floatFromInt(color.b)) * 0.2),
+            @intFromFloat(@as(f32, @floatFromInt(color.a)) * 0.5),
+        ),
         0.0,
         origin,
         scale * 1.1,
