@@ -4,6 +4,7 @@ const rl = @import("raylib");
 
 const Cloud = @import("Cloud.zig");
 const texture_assets = @import("texture_assets.zig");
+const time = @import("time.zig");
 
 const BackgroundSystem = @This();
 const max_clouds = 100;
@@ -11,7 +12,9 @@ const min_clouds = 10;
 
 rand: *std.Random,
 wind_speed: f32 = 0.0,
+wind_speed_speed: f32 = 0.0,
 clouds: std.BoundedArray(Cloud, max_clouds),
+target_num_clouds: u32 = max_clouds,
 should_reset_clouds: bool = true,
 
 pub fn init(rand: *std.Random) !BackgroundSystem {
@@ -23,11 +26,40 @@ pub fn init(rand: *std.Random) !BackgroundSystem {
     return background_system;
 }
 
-pub fn update(self: *BackgroundSystem) void {
+pub fn tick(self: *BackgroundSystem) void {
+    // If the number of clouds is too low, add more
+    if (self.clouds.len < self.target_num_clouds) {
+        self.addCloud();
+    }
+
+    // Vary the target number of clouds a bit
+    self.target_num_clouds = @intCast(std.math.clamp(
+        @as(i32, @intCast(self.target_num_clouds)) + self.rand.intRangeAtMost(i32, -1, 1),
+        0,
+        max_clouds,
+    ));
+}
+
+pub fn renderUpdate(self: *BackgroundSystem) void {
+    // Reset clouds if needed
     if (self.should_reset_clouds) {
         self.resetClouds();
         self.should_reset_clouds = false;
     }
+
+    // Update clouds
+    self.updateClouds();
+
+    // Sort clouds by scale
+    self.sortClouds();
+
+    // Vary the wind speed a bit
+    self.wind_speed_speed += @as(f32, @floatFromInt(
+        self.rand.intRangeAtMost(i32, -10, 10),
+    )) * 0.0001 * time.delta_time_in_ticks;
+    self.wind_speed_speed = std.math.clamp(self.wind_speed_speed, -0.002, 0.002);
+    self.wind_speed += self.wind_speed_speed * time.delta_time_in_ticks;
+    self.wind_speed = std.math.clamp(self.wind_speed, -0.3, 0.3);
 }
 
 pub fn draw(self: *BackgroundSystem) void {
@@ -51,7 +83,7 @@ pub fn draw(self: *BackgroundSystem) void {
 
 fn resetClouds(self: *BackgroundSystem) void {
     // Choose a random number of clouds to spawn
-    const num_clouds = self.rand.intRangeAtMost(u32, min_clouds, max_clouds);
+    self.target_num_clouds = self.rand.intRangeAtMost(u32, min_clouds, max_clouds);
 
     // Randomize wind speed
     self.wind_speed = 0.0;
@@ -61,7 +93,7 @@ fn resetClouds(self: *BackgroundSystem) void {
 
     // Create new clouds, clearing the old ones first
     self.clouds.clear();
-    for (0..num_clouds) |_| {
+    for (0..self.target_num_clouds) |_| {
         self.addCloud();
     }
 
@@ -135,4 +167,60 @@ fn addCloud(self: *BackgroundSystem) void {
 
     //std.debug.print("Adding new cloud {}\n", .{cloud});
     self.clouds.appendAssumeCapacity(cloud);
+}
+
+fn updateClouds(self: *BackgroundSystem) void {
+    for (self.clouds.slice(), 0..) |*cloud, i| {
+        if (i == self.clouds.len) break;
+        while (true) {
+            if (i >= self.clouds.len) break;
+            const texture = texture_assets.cloud[cloud.type];
+            const texture_width = @as(f32, @floatFromInt(texture.width));
+            cloud.position.x += self.wind_speed * cloud.scale * 3.0 * time.delta_time_in_ticks;
+            if (self.wind_speed > 0.0) {
+                if (cloud.position.x - texture_width > @as(f32, @floatFromInt(rl.getScreenWidth()))) {
+                    if (i == self.clouds.len - 1) {
+                        //std.debug.print("Removing last cloud at index {d} {}\n", .{ i, cloud });
+                        _ = self.clouds.pop();
+                        break;
+                    } else {
+                        _ = self.clouds.swapRemove(i);
+                        continue;
+                    }
+                }
+            } else if (cloud.position.x + @as(f32, @floatFromInt(cloud.width)) + texture_width < 0.0) {
+                if (i == self.clouds.len - 1) {
+                    //std.debug.print("Removing last cloud at index {d} {}\n", .{ i, cloud });
+                    _ = self.clouds.pop();
+                    break;
+                } else {
+                    _ = self.clouds.swapRemove(i);
+                    continue;
+                }
+            }
+            cloud.rotation_speed += @as(f32, @floatFromInt(
+                self.rand.intRangeAtMost(i32, -10, 10),
+            )) * 0.00002 * time.delta_time_in_ticks;
+            cloud.rotation_speed = std.math.clamp(cloud.rotation_speed, -0.0007, 0.0007);
+            cloud.scale_speed += @as(f32, @floatFromInt(
+                self.rand.intRangeAtMost(i32, -10, 10),
+            )) * 0.00002 * time.delta_time_in_ticks;
+            cloud.scale_speed = std.math.clamp(cloud.scale_speed, -0.0007, 0.0007);
+            cloud.rotation += cloud.rotation_speed;
+            cloud.scale += cloud.scale_speed;
+            cloud.rotation = std.math.clamp(cloud.rotation, -0.05, 0.05);
+            cloud.scale = std.math.clamp(cloud.scale, 0.6, 1.4);
+            cloud.width = @intFromFloat(@as(f32, @floatFromInt(texture.width)) * cloud.scale);
+            cloud.height = @intFromFloat(@as(f32, @floatFromInt(texture.height)) * cloud.scale);
+            break;
+        }
+    }
+}
+
+fn sortClouds(self: *BackgroundSystem) void {
+    std.sort.block(Cloud, self.clouds.slice(), {}, struct {
+        fn sort(_: void, a: Cloud, b: Cloud) bool {
+            return a.scale < b.scale - 0.02;
+        }
+    }.sort);
 }

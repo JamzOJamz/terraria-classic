@@ -129,7 +129,11 @@ fn gameLoop() !void {
     try draw();
 }
 
-fn fixedUpdate() void {}
+fn fixedUpdate() void {
+    if (show_splash) return;
+
+    background.tick();
+}
 
 fn renderUpdate() void {
     audio_engine.updateMusic();
@@ -138,7 +142,7 @@ fn renderUpdate() void {
 
     if (show_splash) return;
 
-    background.update();
+    background.renderUpdate();
 
     if (rl.isKeyPressed(.f10)) {
         show_frame_rate = !show_frame_rate;
