@@ -170,53 +170,64 @@ fn addCloud(self: *BackgroundSystem) void {
 }
 
 fn updateClouds(self: *BackgroundSystem) void {
-    for (self.clouds.slice(), 0..) |*cloud, i| {
-        if (i == self.clouds.len) break;
-        while (true) {
-            if (i >= self.clouds.len) break;
-            const texture = texture_assets.cloud[cloud.type];
-            const texture_width = @as(f32, @floatFromInt(texture.width));
-            cloud.position.x += self.wind_speed * cloud.scale * 3.0 * time.delta_time_in_ticks;
-            if (self.wind_speed > 0.0) {
-                if (cloud.position.x - texture_width > @as(f32, @floatFromInt(rl.getScreenWidth()))) {
-                    if (i == self.clouds.len - 1) {
-                        //std.debug.print("Removing last cloud at index {d} {}\n", .{ i, cloud });
-                        _ = self.clouds.pop();
-                        break;
-                    } else {
-                        _ = self.clouds.swapRemove(i);
-                        continue;
-                    }
-                }
-            } else if (cloud.position.x + @as(f32, @floatFromInt(cloud.width)) + texture_width < 0.0) {
-                if (i == self.clouds.len - 1) {
-                    //std.debug.print("Removing last cloud at index {d} {}\n", .{ i, cloud });
-                    _ = self.clouds.pop();
-                    break;
-                } else {
-                    _ = self.clouds.swapRemove(i);
-                    continue;
-                }
-            }
-            cloud.rotation_speed += @as(f32, @floatFromInt(
-                self.rand.intRangeAtMost(i32, -10, 10),
-            )) * 0.00002 * time.delta_time_in_ticks;
-            cloud.rotation_speed = std.math.clamp(cloud.rotation_speed, -0.0007, 0.0007);
-            cloud.scale_speed += @as(f32, @floatFromInt(
-                self.rand.intRangeAtMost(i32, -10, 10),
-            )) * 0.00002 * time.delta_time_in_ticks;
-            cloud.scale_speed = std.math.clamp(cloud.scale_speed, -0.0007, 0.0007);
-            cloud.rotation += cloud.rotation_speed;
-            cloud.scale += cloud.scale_speed;
-            cloud.rotation = std.math.clamp(cloud.rotation, -0.05, 0.05);
-            cloud.scale = std.math.clamp(cloud.scale, 0.6, 1.4);
-            cloud.width = @intFromFloat(@as(f32, @floatFromInt(texture.width)) * cloud.scale);
-            cloud.height = @intFromFloat(@as(f32, @floatFromInt(texture.height)) * cloud.scale);
-            break;
+    const clouds = self.clouds.slice();
+    var i = self.clouds.len;
+    while (i > 0) {
+        i -= 1;
+        const cloud = &clouds[i];
+        if (!self.updateOneCloud(cloud)) {
+            _ = self.clouds.swapRemove(i);
         }
     }
 }
 
+fn updateOneCloud(self: *BackgroundSystem, cloud: *Cloud) bool {
+    const texture = texture_assets.cloud[cloud.type];
+    const texture_width = @as(f32, @floatFromInt(texture.width));
+
+    // Update cloud position
+    cloud.position.x += self.wind_speed * cloud.scale * 3.0 * time.delta_time_in_ticks;
+
+    // Check if cloud is out of bounds and should be removed
+    const screen_width = @as(f32, @floatFromInt(rl.getScreenWidth()));
+    if (self.wind_speed > 0.0) {
+        if (cloud.position.x - texture_width > screen_width) {
+            return false;
+        }
+    } else {
+        const current_width = @as(f32, @floatFromInt(cloud.width));
+        if (cloud.position.x + current_width + texture_width < 0.0) {
+            return false;
+        }
+    }
+
+    // Update rotation and scale speeds with random variation
+    cloud.rotation_speed += @as(f32, @floatFromInt(
+        self.rand.intRangeAtMost(i32, -10, 10),
+    )) * 0.00002 * time.delta_time_in_ticks;
+    cloud.rotation_speed = std.math.clamp(cloud.rotation_speed, -0.0007, 0.0007);
+
+    cloud.scale_speed += @as(f32, @floatFromInt(
+        self.rand.intRangeAtMost(i32, -10, 10),
+    )) * 0.00002 * time.delta_time_in_ticks;
+    cloud.scale_speed = std.math.clamp(cloud.scale_speed, -0.0007, 0.0007);
+
+    // Apply rotation and scale changes
+    cloud.rotation += cloud.rotation_speed * time.delta_time_in_ticks;
+    cloud.scale += cloud.scale_speed * time.delta_time_in_ticks;
+
+    // Clamp rotation and scale values
+    cloud.rotation = std.math.clamp(cloud.rotation, -0.05, 0.05);
+    cloud.scale = std.math.clamp(cloud.scale, 0.6, 1.4);
+
+    // Update cloud dimensions based on scale
+    cloud.width = @intFromFloat(@as(f32, @floatFromInt(texture.width)) * cloud.scale);
+    cloud.height = @intFromFloat(@as(f32, @floatFromInt(texture.height)) * cloud.scale);
+
+    return true;
+}
+
+/// Sorts clouds by their scale in ascending order.
 fn sortClouds(self: *BackgroundSystem) void {
     std.sort.block(Cloud, self.clouds.slice(), {}, struct {
         fn sort(_: void, a: Cloud, b: Cloud) bool {
